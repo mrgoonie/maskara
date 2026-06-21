@@ -23,7 +23,10 @@ fingerprints.
 
 Redaction groups findings by file, rejects symlinks, verifies the file is under
 a scan target, creates a backup, validates JSON/JSONL when applicable, and then
-rewrites matched byte ranges with `[MASKARA_REDACTED:<rule>]`.
+rewrites matched byte ranges with `[MASKARA_REDACTED:<rule>]`. If raw
+replacement would break JSON or JSONL escaping, Maskara falls back to
+structured redaction: decode the document or line, redact string values, and
+marshal valid JSON back to disk.
 
 ## Guardrails
 
