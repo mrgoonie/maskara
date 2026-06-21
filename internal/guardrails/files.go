@@ -84,21 +84,6 @@ func installFile(plan filePlan, dryRun bool) (Change, error) {
 	return Change{Path: plan.path, Action: action, BackupPath: backupPath}, nil
 }
 
-func rootMarkers(agent, root string) []string {
-	switch agent {
-	case "claude":
-		return []string{filepath.Join(root, ".claude")}
-	case "codex":
-		return []string{filepath.Join(root, ".codex")}
-	case "opencode":
-		return []string{filepath.Join(root, ".config", "opencode"), filepath.Join(root, ".opencode")}
-	case "antigravity":
-		return []string{filepath.Join(root, ".antigravity")}
-	default:
-		return nil
-	}
-}
-
 func hookAsset() string {
 	if runtime.GOOS == "windows" {
 		return "assets/maskara-privacy-hook.ps1"

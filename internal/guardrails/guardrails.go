@@ -65,7 +65,7 @@ func resolveAgents(agentName, root string) []string {
 	candidates := agents.Supported()
 	var existing []string
 	for _, candidate := range candidates {
-		for _, path := range rootMarkers(candidate, root) {
+		for _, path := range agents.RootMarkers(candidate, root) {
 			if _, err := os.Stat(path); err == nil {
 				existing = append(existing, candidate)
 				break
@@ -103,6 +103,16 @@ func installAgent(agent, root string, dryRun bool) ([]Change, error) {
 			writePlan(filepath.Join(root, ".antigravity", "hooks", hookName("maskara-privacy-hook")), mustAsset(hookAsset()), hookMode()),
 		})
 	default:
-		return nil, errors.New("unsupported guardrails agent: " + agent)
+		if !agents.IsSupported(agent) {
+			return nil, errors.New("unsupported guardrails agent: " + agent)
+		}
+		configRoot := agents.PrimaryConfigRoot(agent, root)
+		if configRoot == "" {
+			return nil, errors.New("unsupported guardrails agent: " + agent)
+		}
+		return installFiles(root, dryRun, []filePlan{
+			appendPlan(filepath.Join(configRoot, "maskara-guardrails.md"), mustAsset("assets/guardrail-instructions.md")),
+			writePlan(filepath.Join(configRoot, "hooks", hookName("maskara-privacy-hook")), mustAsset(hookAsset()), hookMode()),
+		})
 	}
 }
