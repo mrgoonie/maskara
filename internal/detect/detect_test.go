@@ -1,6 +1,7 @@
 package detect
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -38,5 +39,51 @@ func TestFindUsesEnvAssignmentValueRange(t *testing.T) {
 	got := content[findings[0].Start:findings[0].End]
 	if got != value {
 		t.Fatalf("expected value-only range %q, got %q", value, got)
+	}
+}
+
+func TestFindStopsBoundedRulesBeforeJSONEscapedQuote(t *testing.T) {
+	databaseURL := "postgres" + "://user:redacted@example.com/db"
+	envName := "api" + "_key"
+	envValue := "maskara-test-redactable-value"
+	tests := []struct {
+		name    string
+		message string
+		ruleID  string
+		want    string
+	}{
+		{
+			name:    "database URL",
+			message: `dsn="` + databaseURL + `"`,
+			ruleID:  "database-url",
+			want:    databaseURL,
+		},
+		{
+			name:    "env value",
+			message: envName + `=` + envValue + `"`,
+			ruleID:  "env-secret",
+			want:    envValue,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			encoded, err := json.Marshal(map[string]string{"message": test.message})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			findings := Find(string(encoded), "session.jsonl", "codex", DefaultRules())
+			var got string
+			for _, finding := range findings {
+				if finding.RuleID == test.ruleID {
+					got = string(encoded)[finding.Start:finding.End]
+					break
+				}
+			}
+			if got != test.want {
+				t.Fatalf("expected %q range %q, got %q", test.ruleID, test.want, got)
+			}
+		})
 	}
 }

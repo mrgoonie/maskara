@@ -51,9 +51,9 @@ func DefaultRules() []Rule {
 		{ID: "slack-token", Name: "Slack token", Severity: SeverityHigh, Expression: `\bxox[baprs]-[A-Za-z0-9-]{20,}\b`},
 		{ID: "stripe-live-key", Name: "Stripe live key", Severity: SeverityCritical, Expression: `\b(?:sk|rk)_live_[A-Za-z0-9]{16,}\b`},
 		{ID: "jwt", Name: "JSON Web Token", Severity: SeverityHigh, Expression: `\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b`},
-		{ID: "database-url", Name: "Database URL", Severity: SeverityCritical, Expression: `(?i)\b(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis)://[^\s"'<>` + "`" + `]+`},
+		{ID: "database-url", Name: "Database URL", Severity: SeverityCritical, Expression: `(?i)\b(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis)://[^\s"'<>` + "`" + `\\]+`},
 		{ID: "private-key", Name: "Private key block", Severity: SeverityCritical, Expression: `(?s)-----BEGIN [A-Z ]*PRIVATE KEY-----.*?-----END [A-Z ]*PRIVATE KEY-----`},
-		{ID: "env-secret", Name: "Secret-like env assignment", Severity: SeverityMedium, Expression: `(?i)\b(?:api[_-]?key|secret|token|password|passwd|pwd|private[_-]?key|client[_-]?secret)\b\s*[:=]\s*["']?([^\s"',` + "`" + `]{8,})`, ValueGroup: 1},
+		{ID: "env-secret", Name: "Secret-like env assignment", Severity: SeverityMedium, Expression: `(?i)\b(?:api[_-]?key|secret|token|password|passwd|pwd|private[_-]?key|client[_-]?secret)\b\s*[:=]\s*["']?([^\s"',` + "`" + `\\]{8,})`, ValueGroup: 1},
 	}
 	for index := range specs {
 		specs[index].re = regexp.MustCompile(specs[index].Expression)
