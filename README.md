@@ -82,10 +82,14 @@ Current target support:
 | Qwen Code | `~/.qwen` plus platform config/data dirs |
 | Trae | `~/.trae` plus platform config/data dirs |
 
-Use `--root <path>` to scan a custom log directory.
-Use `--agent all` to include every built-in target. Agent aliases such as
-`gemini-cli`, `qwen-code`, `kimi-code`, and `github copilot` normalize to their
-canonical names.
+Use `--root <path>` to scan a custom log directory. Without `--root`,
+`--agent all` includes every built-in default target; with `--root`, Maskara
+scans that custom directory once and labels findings with the selected agent.
+Agent aliases such as `gemini-cli`, `qwen-code`, `kimi-code`, and
+`github copilot` normalize to canonical names.
+
+See [Agent Support Reference](docs/agent-support-reference.md) for canonical
+names, aliases, path heuristics, and guardrail install behavior.
 
 ## Detection
 

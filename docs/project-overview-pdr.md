@@ -29,12 +29,21 @@ reduce future leaks.
   files where native instruction paths are not known
 - CI and release workflows for stable and beta branches
 
+## Supported Agent Scope
+
+Maskara supports local filesystem-backed logs and config roots for Claude,
+Codex, Cursor, OpenCode, Antigravity, Kimi, Droid, Gemini, GitHub Copilot,
+Hermes, OpenClaw, Kilo, Kiro, Pi, Qoder, Qwen, and Trae. Default paths are
+best-effort heuristics; users can pass `--root` for exact log locations.
+
 ## Out Of Scope
 
 - Provider-side secret validation
 - Automatic credential rotation
 - Scanning remote SaaS logs
 - SQLite/browser profile parsing
+- Guaranteeing that generic guardrail files are automatically loaded by every
+  supported agent
 - Organization policy management
 
 ## Unresolved Questions

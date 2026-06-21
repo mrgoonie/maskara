@@ -7,6 +7,15 @@ go test ./...
 go build -o bin/maskara ./cmd/maskara
 ```
 
+Before beta or stable shipping, run focused CLI smoke checks for changed public
+behavior. For agent-catalog changes:
+
+```bash
+go run ./cmd/maskara --help
+go run ./cmd/maskara scan --agent gemini --root /tmp/maskara-empty
+go run ./cmd/maskara guardrails -a qwen --root /tmp/maskara-home --dry-run
+```
+
 ## Stable Release
 
 Stable releases come from `main`.
@@ -30,6 +39,9 @@ git push origin vX.Y.Z-beta.N
 ```
 
 Tags with prerelease suffixes are marked prerelease by GoReleaser.
+
+For beta branch validation, CI must pass across Ubuntu, macOS, and Windows. The
+release workflow also builds a beta snapshot on `dev`.
 
 ## Unresolved Questions
 

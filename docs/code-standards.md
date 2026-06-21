@@ -11,8 +11,12 @@
 ## Go
 
 - Run `gofmt`.
-- Keep packages narrow: `detect`, `scanner`, `redact`, `report`, `guardrails`,
-  `cli`.
+- Keep packages narrow: `agents`, `detect`, `scanner`, `redact`, `report`,
+  `guardrails`, `cli`.
+- Keep the agent catalog in `internal/agents`; do not duplicate supported-agent
+  lists in CLI, guardrails, scanner, or docs.
+- Add table-driven tests when adding aliases, default roots, or guardrail
+  support for an agent.
 - Return structured errors. Do not panic outside embedded asset loading.
 - Avoid global mutable state except build-time version variables.
 
@@ -21,6 +25,8 @@
 - Test credentials must be generated dynamically or clearly fake.
 - Reports must use masked previews and fingerprints only.
 - Redaction must reject symlinks and files outside scan targets.
+- Guardrail writes must stay under the configured root, use backups before
+  replacement, and keep dry-run output side-effect-free.
 
 ## Unresolved Questions
 
