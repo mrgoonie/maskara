@@ -58,6 +58,24 @@ maskara guardrails --dry-run
 `maskara` with no subcommand runs the full workflow: scan, redact, and report.
 Redaction creates `*.maskara.bak` backups before rewriting files.
 
+## How it works
+
+```mermaid
+flowchart TD
+    Command["maskara command"] --> Mode{"Subcommand"}
+    Mode -->|"scan, report, or default"| Targets["Resolve agent targets<br/>auto, all, --agent, --root"]
+    Targets --> Scanner["Walk local files<br/>skip binary and oversized files"]
+    Scanner --> Detector["Detect secret patterns"]
+    Detector --> Findings["Create masked findings<br/>preview and SHA-256 fingerprint"]
+    Findings --> Report["Write Markdown or JSON report"]
+    Findings -->|"default workflow only"| Redact["Backup files and redact local copies"]
+    Mode -->|"guardrails"| Guardrails["Install local guardrails<br/>instructions, privacy skill, hooks"]
+```
+
+Maskara stays local: it reads agent logs from disk, reports masked evidence,
+and redacts local copies only when the full default workflow runs. It does not
+validate secrets with providers or send findings to a remote service.
+
 ## Agents
 
 Current target support:
@@ -131,10 +149,10 @@ it. Local redaction removes copies from files on disk only.
 
 ## Release Channels
 
-- `main`: stable release branch
-- `dev`: beta branch
-- stable tags: `vX.Y.Z`
-- beta tags: `vX.Y.Z-beta.N`
+- `dev`: beta branch; each push creates the next `vX.Y.Z-beta.N` prerelease.
+- `main`: stable release branch; each push creates the next `vX.Y.Z` official release.
+- Version bumps come from conventional commits: breaking changes bump major,
+  `feat` bumps minor, and all other releasable changes bump patch.
 
 ## References
 

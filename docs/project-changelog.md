@@ -4,6 +4,11 @@
 
 ### Added
 
+- Automated branch-push release workflow: `dev` publishes beta prereleases and
+  `main` publishes stable releases.
+- Semantic version bumping and generated GitHub release notes based on
+  conventional commit messages.
+- README `How it works` diagram for the CLI scan/report/redact/guardrails flow.
 - Expanded supported coding-agent catalog across scan target resolution, CLI
   help, guardrail planning, tests, and docs.
 - Added shared agent metadata for Cursor, Antigravity CLI, Kimi Code CLI, Droid,
@@ -14,6 +19,8 @@
 
 ### Changed
 
+- Release docs now describe automatic branch-driven release behavior instead of
+  manual tag creation as the normal path.
 - Guardrails now use the shared agent root markers and generic guardrail files
   for agents without known native instruction paths.
 - Documentation now states the `--agent all` and `--root` interaction clearly.
