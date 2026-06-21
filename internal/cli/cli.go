@@ -34,7 +34,7 @@ func Execute(args []string, stdout, stderr io.Writer) int {
 		case "help", "-h", "--help":
 			printHelp(stdout)
 			return exitClean
-		case "version", "--version", "-V":
+		case "version", "--version", "-v", "-V":
 			fmt.Fprintf(stdout, "maskara %s (%s, %s)\n", version.Version, version.Commit, version.Date)
 			return exitClean
 		case "scan":

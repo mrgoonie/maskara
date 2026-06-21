@@ -10,6 +10,7 @@ func printHelp(writer io.Writer) {
 
 Usage:
   maskara                         scan, redact with backups, and write a report
+  maskara --version | -v           print version information
   maskara scan [flags]             scan only
   maskara report [flags]           scan and write a report
   maskara guardrails [flags]       install privacy guardrails for coding agents

@@ -24,6 +24,10 @@ Or download a release binary from GitHub Releases.
 # full workflow: scan, redact with backups, and write a Markdown report
 maskara
 
+# print version
+maskara --version
+maskara -v
+
 # scan only
 maskara scan
 
