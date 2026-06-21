@@ -4,7 +4,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 )
 
@@ -13,12 +12,35 @@ type Target struct {
 	Root  string `json:"root"`
 }
 
-var supportedAgents = []string{"claude", "codex", "opencode", "antigravity"}
+var supportedAgents = []string{
+	"claude",
+	"codex",
+	"cursor",
+	"opencode",
+	"antigravity",
+	"kimi",
+	"droid",
+	"gemini",
+	"github-copilot",
+	"hermes",
+	"openclaw",
+	"kilo",
+	"kiro",
+	"pi",
+	"qoder",
+	"qwen",
+	"trae",
+}
 
 func Supported() []string {
 	out := make([]string, len(supportedAgents))
 	copy(out, supportedAgents)
 	return out
+}
+
+func HelpList() string {
+	names := append([]string{"auto", "all"}, supportedAgents...)
+	return strings.Join(names, ", ")
 }
 
 func Resolve(agentName, root string) ([]Target, error) {
@@ -38,10 +60,13 @@ func Resolve(agentName, root string) ([]Target, error) {
 	if err != nil {
 		return nil, err
 	}
-	if agent == "auto" || agent == "all" {
+	if agent == "auto" {
 		return existingOrDefaultTargets(home), nil
 	}
-	if !isSupported(agent) {
+	if agent == "all" {
+		return allDefaultTargets(home), nil
+	}
+	if !IsSupported(agent) {
 		return nil, errors.New("unsupported agent: " + agentName)
 	}
 	return defaultTargetsFor(home, agent), nil
@@ -49,6 +74,7 @@ func Resolve(agentName, root string) ([]Target, error) {
 
 func Normalize(agent string) string {
 	value := strings.ToLower(strings.TrimSpace(agent))
+	value = strings.NewReplacer("_", "-", " ", "-").Replace(value)
 	switch value {
 	case "", "auto":
 		return "auto"
@@ -56,6 +82,30 @@ func Normalize(agent string) string {
 		return "claude"
 	case "open-code":
 		return "opencode"
+	case "antigravity-cli", "antigravity-code":
+		return "antigravity"
+	case "kimi-code", "kimi-code-cli", "kimi-cli":
+		return "kimi"
+	case "gemini-cli":
+		return "gemini"
+	case "github-copilot-cli", "copilot":
+		return "github-copilot"
+	case "hermes-agent":
+		return "hermes"
+	case "open-claw", "openclaw-cli":
+		return "openclaw"
+	case "kilo-code":
+		return "kilo"
+	case "kiro-cli":
+		return "kiro"
+	case "pi-cli":
+		return "pi"
+	case "qwen-code":
+		return "qwen"
+	case "qoder-cli":
+		return "qoder"
+	case "trae-cli":
+		return "trae"
 	default:
 		return value
 	}
@@ -81,52 +131,39 @@ func existingOrDefaultTargets(home string) []Target {
 	return defaults
 }
 
+func allDefaultTargets(home string) []Target {
+	var targets []Target
+	for _, agent := range supportedAgents {
+		targets = append(targets, defaultTargetsFor(home, agent)...)
+	}
+	return targets
+}
+
 func defaultTargetsFor(home, agent string) []Target {
-	switch agent {
-	case "claude":
-		return []Target{{Agent: "claude", Root: filepath.Join(home, ".claude", "projects")}}
-	case "codex":
-		return []Target{{Agent: "codex", Root: filepath.Join(home, ".codex", "sessions")}}
-	case "opencode":
-		return opencodeTargets(home)
-	case "antigravity":
-		return antigravityTargets(home)
-	default:
+	spec, ok := agentSpecs[agent]
+	if !ok {
 		return nil
 	}
+	return spec.targets(home)
 }
 
-func opencodeTargets(home string) []Target {
-	targets := []Target{{Agent: "opencode", Root: filepath.Join(home, ".opencode")}}
-	switch runtime.GOOS {
-	case "windows":
-		if appData := os.Getenv("APPDATA"); appData != "" {
-			targets = append(targets, Target{Agent: "opencode", Root: filepath.Join(appData, "opencode")})
-		}
-	case "darwin":
-		targets = append(targets, Target{Agent: "opencode", Root: filepath.Join(home, "Library", "Application Support", "opencode")})
-	default:
-		targets = append(targets, Target{Agent: "opencode", Root: filepath.Join(home, ".local", "share", "opencode")})
+func RootMarkers(agent, root string) []string {
+	spec, ok := agentSpecs[agent]
+	if !ok {
+		return nil
 	}
-	return targets
+	return spec.markers(root)
 }
 
-func antigravityTargets(home string) []Target {
-	targets := []Target{{Agent: "antigravity", Root: filepath.Join(home, ".antigravity")}}
-	switch runtime.GOOS {
-	case "windows":
-		if appData := os.Getenv("APPDATA"); appData != "" {
-			targets = append(targets, Target{Agent: "antigravity", Root: filepath.Join(appData, "Antigravity")})
-		}
-	case "darwin":
-		targets = append(targets, Target{Agent: "antigravity", Root: filepath.Join(home, "Library", "Application Support", "Antigravity")})
-	default:
-		targets = append(targets, Target{Agent: "antigravity", Root: filepath.Join(home, ".config", "antigravity")})
+func PrimaryConfigRoot(agent, root string) string {
+	markers := RootMarkers(agent, root)
+	if len(markers) == 0 {
+		return ""
 	}
-	return targets
+	return markers[0]
 }
 
-func isSupported(agent string) bool {
+func IsSupported(agent string) bool {
 	for _, supported := range supportedAgents {
 		if agent == supported {
 			return true

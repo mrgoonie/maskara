@@ -2,58 +2,205 @@ name: Release
 
 on:
   push:
-    branches: [dev]
-    tags:
-      - "v*.*.*"
+    branches: [dev, main]
   workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
-  beta-snapshot:
-    if: github.ref == 'refs/heads/dev'
+  release:
+    name: Release (${{ github.ref_name }})
+    if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
           go-version: "1.25.x"
           cache: false
+
+      - name: Test
+        run: go test ./...
+
+      - name: Compute semantic version and changelog
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git fetch --force --tags
+
+          branch="${GITHUB_REF_NAME}"
+          if [[ "${branch}" == "dev" ]]; then
+            channel="beta"
+          elif [[ "${branch}" == "main" ]]; then
+            channel="stable"
+          else
+            echo "Unsupported release branch: ${branch}" >&2
+            exit 1
+          fi
+
+          latest_stable="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)"
+          if [[ -n "${latest_stable}" ]]; then
+            version_base="${latest_stable#v}"
+            commit_range="${latest_stable}..HEAD"
+          else
+            version_base="0.0.0"
+            commit_range="HEAD"
+          fi
+
+          major="${version_base%%.*}"
+          remainder="${version_base#*.}"
+          minor="${remainder%%.*}"
+          patch="${remainder#*.}"
+
+          commit_subjects="$(git log --no-merges --format='%s' ${commit_range} || true)"
+          commit_bodies="$(git log --no-merges --format='%b' ${commit_range} || true)"
+
+          bump="patch"
+          if grep -Eq '^[a-zA-Z]+(\([^)]+\))?!:' <<<"${commit_subjects}" || grep -Eq 'BREAKING[ -]CHANGE:' <<<"${commit_bodies}"; then
+            bump="major"
+          elif grep -Eq '^feat(\([^)]+\))?:' <<<"${commit_subjects}"; then
+            bump="minor"
+          fi
+
+          case "${bump}" in
+            major)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            minor)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            patch)
+              patch=$((patch + 1))
+              ;;
+          esac
+
+          base_version="${major}.${minor}.${patch}"
+          latest_beta=""
+          if [[ "${channel}" == "beta" ]]; then
+            latest_beta="$(git tag --list "v${base_version}-beta.*" --sort=-version:refname | head -n 1 || true)"
+            if [[ -n "${latest_beta}" ]]; then
+              beta_number="${latest_beta##*.}"
+              beta_number=$((beta_number + 1))
+              changelog_from="${latest_beta}"
+            else
+              beta_number=1
+              changelog_from="${latest_stable}"
+            fi
+            tag="v${base_version}-beta.${beta_number}"
+          else
+            changelog_from="${latest_stable}"
+            tag="v${base_version}"
+          fi
+
+          if [[ -n "${changelog_from}" ]]; then
+            changelog_range="${changelog_from}..HEAD"
+            changelog_label="${changelog_from}"
+          else
+            changelog_range="HEAD"
+            changelog_label="repository start"
+          fi
+
+          notes_file="${RUNNER_TEMP}/release-notes.md"
+          commits_file="${RUNNER_TEMP}/release-commits.tsv"
+          git log --no-merges --reverse --format='%s%x09%h' ${changelog_range} > "${commits_file}" || true
+
+          {
+            echo "# ${tag}"
+            echo
+            echo "- Channel: ${channel}"
+            echo "- Version bump: ${bump}"
+            echo "- Changes since: ${changelog_label}"
+            echo
+
+            breaking_pattern='^[a-zA-Z]+(\([^)]+\))?!:'
+            feat_pattern='^feat(\([^)]+\))?:'
+            fix_pattern='^fix(\([^)]+\))?:'
+
+            for section in "Breaking Changes" "Features" "Fixes" "Other Changes"; do
+              case "${section}" in
+                "Breaking Changes") pattern="${breaking_pattern}" ;;
+                "Features") pattern="${feat_pattern}" ;;
+                "Fixes") pattern="${fix_pattern}" ;;
+                *) pattern='' ;;
+              esac
+
+              lines=""
+              while IFS=$'\t' read -r subject hash; do
+                [[ -z "${subject}" ]] && continue
+                if [[ "${section}" == "Other Changes" ]]; then
+                  if [[ ! "${subject}" =~ ${breaking_pattern} && ! "${subject}" =~ ${feat_pattern} && ! "${subject}" =~ ${fix_pattern} ]]; then
+                    lines+="- ${subject} (${hash})"$'\n'
+                  fi
+                elif [[ "${subject}" =~ ${pattern} ]]; then
+                  lines+="- ${subject} (${hash})"$'\n'
+                fi
+              done < "${commits_file}"
+
+              if [[ -n "${lines}" ]]; then
+                echo "## ${section}"
+                echo
+                printf "%s" "${lines}"
+                echo
+              fi
+            done
+          } > "${notes_file}"
+
+          if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null || git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null 2>&1; then
+            tag_exists="true"
+          else
+            tag_exists="false"
+          fi
+
+          {
+            echo "channel=${channel}"
+            echo "tag=${tag}"
+            echo "version=${base_version}"
+            echo "bump=${bump}"
+            echo "tag_exists=${tag_exists}"
+            echo "notes_file=${notes_file}"
+          } >> "${GITHUB_OUTPUT}"
+
+          echo "Computed ${tag} (${channel}, ${bump}); tag_exists=${tag_exists}"
+
+      - name: Create release tag
+        if: steps.release.outputs.tag_exists == 'false'
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${TAG}" -m "Release ${TAG}"
+          git push origin "refs/tags/${TAG}"
+
       - name: Setup GoReleaser
+        if: steps.release.outputs.tag_exists == 'false'
         uses: goreleaser/goreleaser-action@v6
         with:
           install-only: true
-      - name: Build beta snapshot
-        run: goreleaser release --snapshot --clean
-      - name: Upload beta artifacts
-        uses: actions/upload-artifact@v5
-        with:
-          name: maskara-beta-snapshot
-          path: dist/*
 
-  tagged-release:
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-      - name: Setup Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: "1.25.x"
-          cache: false
-      - name: Release
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          distribution: goreleaser
-          version: latest
-          args: release --clean
+      - name: Publish release
+        if: steps.release.outputs.tag_exists == 'false'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NOTES_FILE: ${{ steps.release.outputs.notes_file }}
+        run: goreleaser release --clean --release-notes "${NOTES_FILE}"
+
+      - name: Skip existing release
+        if: steps.release.outputs.tag_exists == 'true'
+        run: echo "Release tag ${{ steps.release.outputs.tag }} already exists; skipping publish."

@@ -24,12 +24,19 @@ Or download a release binary from GitHub Releases.
 # full workflow: scan, redact with backups, and write a Markdown report
 maskara
 
+# print version
+maskara --version
+maskara -v
+
 # scan only
 maskara scan
 
 # scan only Codex logs
 maskara scan --agent codex
 maskara scan -a codex
+
+# scan Gemini CLI logs from a custom directory
+maskara scan --agent gemini --root /path/to/logs
 
 # scan and report
 maskara report
@@ -51,6 +58,24 @@ maskara guardrails --dry-run
 `maskara` with no subcommand runs the full workflow: scan, redact, and report.
 Redaction creates `*.maskara.bak` backups before rewriting files.
 
+## How it works
+
+```mermaid
+flowchart TD
+    Command["maskara command"] --> Mode{"Subcommand"}
+    Mode -->|"scan, report, or default"| Targets["Resolve agent targets<br/>auto, all, --agent, --root"]
+    Targets --> Scanner["Walk local files<br/>skip binary and oversized files"]
+    Scanner --> Detector["Detect secret patterns"]
+    Detector --> Findings["Create masked findings<br/>preview and SHA-256 fingerprint"]
+    Findings --> Report["Write Markdown or JSON report"]
+    Findings -->|"default workflow only"| Redact["Backup files and redact local copies"]
+    Mode -->|"guardrails"| Guardrails["Install local guardrails<br/>instructions, privacy skill, hooks"]
+```
+
+Maskara stays local: it reads agent logs from disk, reports masked evidence,
+and redacts local copies only when the full default workflow runs. It does not
+validate secrets with providers or send findings to a remote service.
+
 ## Agents
 
 Current target support:
@@ -59,10 +84,30 @@ Current target support:
 |---|---|
 | Claude Code | `~/.claude/projects` |
 | Codex | `~/.codex/sessions` |
-| OpenCode | platform config/data dirs |
-| Antigravity | platform config/data dirs |
+| Cursor | `~/.cursor` plus platform Cursor config/data dirs |
+| OpenCode | `~/.opencode` plus platform config/data dirs |
+| Antigravity / Antigravity CLI | `~/.antigravity` plus platform config/data dirs |
+| Kimi Code CLI | `~/.kimi` plus platform config/data dirs |
+| Droid | `~/.droid` plus platform config/data dirs |
+| Gemini CLI | `~/.gemini` plus platform config/data dirs |
+| GitHub Copilot | `~/.github-copilot` plus platform config/data dirs |
+| Hermes Agent | `~/.hermes` plus platform config/data dirs |
+| OpenClaw | `~/.openclaw` plus platform config/data dirs |
+| Kilo Code | `~/.kilo-code` plus platform config/data dirs |
+| Kiro CLI | `~/.kiro` plus platform config/data dirs |
+| Pi CLI | `~/.pi` plus platform config/data dirs |
+| Qoder | `~/.qoder` plus platform config/data dirs |
+| Qwen Code | `~/.qwen` plus platform config/data dirs |
+| Trae | `~/.trae` plus platform config/data dirs |
 
-Use `--root <path>` to scan a custom log directory.
+Use `--root <path>` to scan a custom log directory. Without `--root`,
+`--agent all` includes every built-in default target; with `--root`, Maskara
+scans that custom directory once and labels findings with the selected agent.
+Agent aliases such as `gemini-cli`, `qwen-code`, `kimi-code`, and
+`github copilot` normalize to canonical names.
+
+See [Agent Support Reference](docs/agent-support-reference.md) for canonical
+names, aliases, path heuristics, and guardrail install behavior.
 
 ## Detection
 
@@ -81,7 +126,9 @@ full secret values.
 
 `maskara guardrails` installs local agent instructions, a small privacy skill,
 and hook scripts that discourage commands likely to print secrets. Existing
-files are backed up before modification.
+files are backed up before modification. For agents without a known native
+instruction file, Maskara writes a generic `maskara-guardrails.md` reference and
+hook under the likely local config root.
 
 Guardrails reduce future leaks. They do not replace secret rotation, provider
 revocation, or review of already-shared transcripts.
@@ -102,10 +149,10 @@ it. Local redaction removes copies from files on disk only.
 
 ## Release Channels
 
-- `main`: stable release branch
-- `dev`: beta branch
-- stable tags: `vX.Y.Z`
-- beta tags: `vX.Y.Z-beta.N`
+- `dev`: beta branch; each push creates the next `vX.Y.Z-beta.N` prerelease.
+- `main`: stable release branch; each push creates the next `vX.Y.Z` official release.
+- Version bumps come from conventional commits: breaking changes bump major,
+  `feat` bumps minor, and all other releasable changes bump patch.
 
 ## References
 

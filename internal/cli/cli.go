@@ -34,7 +34,7 @@ func Execute(args []string, stdout, stderr io.Writer) int {
 		case "help", "-h", "--help":
 			printHelp(stdout)
 			return exitClean
-		case "version", "--version", "-V":
+		case "version", "--version", "-v", "-V":
 			fmt.Fprintf(stdout, "maskara %s (%s, %s)\n", version.Version, version.Commit, version.Date)
 			return exitClean
 		case "scan":
@@ -138,7 +138,7 @@ func runReport(args []string, stdout, stderr io.Writer) int {
 func runGuardrails(args []string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("maskara guardrails", flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	agentName := fs.String("agent", "auto", "agent to install guardrails for: auto, claude, codex, opencode, antigravity")
+	agentName := fs.String("agent", "auto", "agent to install guardrails for: "+agents.HelpList())
 	fs.StringVar(agentName, "a", "auto", "shorthand for --agent")
 	root := fs.String("root", "", "home/config root override, useful for tests")
 	dryRun := fs.Bool("dry-run", false, "show planned files without writing")
@@ -167,7 +167,7 @@ func parseCommon(name string, args []string, defaultOutput bool) (commonOptions,
 	fs := flag.NewFlagSet(name, flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	options := commonOptions{agent: "auto"}
-	fs.StringVar(&options.agent, "agent", "auto", "agent to scan: auto, claude, codex, opencode, antigravity")
+	fs.StringVar(&options.agent, "agent", "auto", "agent to scan: "+agents.HelpList())
 	fs.StringVar(&options.agent, "a", "auto", "shorthand for --agent")
 	fs.StringVar(&options.root, "root", "", "scan root override")
 	fs.StringVar(&options.output, "output", "", "report output file or directory")

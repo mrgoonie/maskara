@@ -90,3 +90,71 @@ func assertJSONLValid(t *testing.T, content []byte) {
 		}
 	}
 }
+
+func TestApplyFallsBackToStructuredJSONLRedaction(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "session.jsonl")
+	secret := "abc123456789xyz"
+	message := `{"message":"SECRET=` + secret + `\" after"}` + "\n"
+	if err := os.WriteFile(path, []byte(message), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := scanner.Scan(scanner.Options{Targets: []agents.Target{{Agent: "codex", Root: root}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	summary, err := Apply(result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summary.Replaced != 1 {
+		t.Fatalf("expected one replacement, got %+v", summary)
+	}
+
+	redacted, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(redacted), secret) {
+		t.Fatal("secret still present after structured redaction")
+	}
+	for _, line := range strings.Split(strings.TrimSpace(string(redacted)), "\n") {
+		if !json.Valid([]byte(line)) {
+			t.Fatalf("redacted JSONL is invalid: %s", line)
+		}
+	}
+}
+
+func TestApplyFallsBackToStructuredJSONRedaction(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "session.json")
+	secret := "abc123456789xyz"
+	message := `{"message":"SECRET=` + secret + `\" after"}` + "\n"
+	if err := os.WriteFile(path, []byte(message), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := scanner.Scan(scanner.Options{Targets: []agents.Target{{Agent: "codex", Root: root}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	summary, err := Apply(result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if summary.Replaced != 1 {
+		t.Fatalf("expected one replacement, got %+v", summary)
+	}
+
+	redacted, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(redacted), secret) {
+		t.Fatal("secret still present after structured redaction")
+	}
+	if !json.Valid(redacted) {
+		t.Fatalf("redacted JSON is invalid: %s", redacted)
+	}
+}

@@ -66,6 +66,33 @@ func redactFile(path string, findings []detect.Finding, targets []agents.Target)
 	if err != nil {
 		return FileSummary{}, err
 	}
+	rewritten, replaced := applyRawRedactions(original, findings)
+	if replaced == 0 || bytes.Equal(original, rewritten) {
+		return FileSummary{Path: path}, nil
+	}
+	if err := validateStructured(path, original, rewritten); err != nil {
+		structured, structuredReplaced, structuredErr := redactStructured(path, original)
+		if structuredErr != nil {
+			return FileSummary{}, err
+		}
+		rewritten = structured
+		replaced = structuredReplaced
+		if replaced == 0 || bytes.Equal(original, rewritten) {
+			return FileSummary{Path: path}, nil
+		}
+	}
+
+	backupPath := backupName(path)
+	if err := os.WriteFile(backupPath, original, 0o600); err != nil {
+		return FileSummary{}, err
+	}
+	if err := writeReplace(path, rewritten, info.Mode().Perm()); err != nil {
+		return FileSummary{}, err
+	}
+	return FileSummary{Path: path, BackupPath: backupPath, Replaced: replaced}, nil
+}
+
+func applyRawRedactions(original []byte, findings []detect.Finding) ([]byte, int) {
 	rewritten := make([]byte, len(original))
 	copy(rewritten, original)
 
@@ -86,21 +113,7 @@ func redactFile(path string, findings []detect.Finding, targets []agents.Target)
 		lastStart = finding.Start
 		replaced++
 	}
-	if replaced == 0 || bytes.Equal(original, rewritten) {
-		return FileSummary{Path: path}, nil
-	}
-	if err := validateStructured(path, original, rewritten); err != nil {
-		return FileSummary{}, err
-	}
-
-	backupPath := backupName(path)
-	if err := os.WriteFile(backupPath, original, 0o600); err != nil {
-		return FileSummary{}, err
-	}
-	if err := writeReplace(path, rewritten, info.Mode().Perm()); err != nil {
-		return FileSummary{}, err
-	}
-	return FileSummary{Path: path, BackupPath: backupPath, Replaced: replaced}, nil
+	return rewritten, replaced
 }
 
 func insideTargets(path string, targets []agents.Target) bool {
