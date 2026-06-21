@@ -42,6 +42,21 @@ func TestFindUsesEnvAssignmentValueRange(t *testing.T) {
 	}
 }
 
+func TestFindPreservesBackslashesInsideEnvAssignmentValue(t *testing.T) {
+	value := `maskara\test-secret-value`
+	content := "client_secret=\"" + value + "\"\n"
+
+	findings := Find(content, "history.log", "claude", DefaultRules())
+	if len(findings) != 1 {
+		t.Fatalf("expected one env finding, got %d", len(findings))
+	}
+
+	got := content[findings[0].Start:findings[0].End]
+	if got != value {
+		t.Fatalf("expected backslash-preserving range %q, got %q", value, got)
+	}
+}
+
 func TestFindStopsBoundedRulesBeforeJSONEscapedQuote(t *testing.T) {
 	databaseURL := "postgres" + "://user:redacted@example.com/db"
 	envName := "api" + "_key"
