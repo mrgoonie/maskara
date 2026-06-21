@@ -25,9 +25,16 @@
   for agents without known native instruction paths.
 - Documentation now states the `--agent all` and `--root` interaction clearly.
 
+### Fixed
+
+- JSONL redaction now preserves escaped quote delimiters when detected values
+  end before JSON-escaped quotes, preventing valid Codex session logs from
+  failing structured validation during redaction.
+
 ### Verification
 
 - `go test ./...` passed locally.
+- JSONL escaped delimiter regression passed locally.
 - Manual CI on `dev` passed across Ubuntu, macOS, and Windows.
 - Beta release snapshot on `dev` passed.
 
