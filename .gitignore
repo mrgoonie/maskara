@@ -1,0 +1,24 @@
+.DS_Store
+Thumbs.db
+
+# Build outputs
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+
+# Local reports and backups
+maskara-report.md
+maskara-report.json
+*.maskara.bak
+*.maskara.bak.*
+
+# Local env/secrets
+.env
+.env.*
+!.env.example
+
+# Editor state
+.idea/
+.vscode/

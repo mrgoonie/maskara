@@ -1,0 +1,56 @@
+version: 2
+
+project_name: maskara
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: maskara
+    main: ./cmd/maskara
+    binary: maskara
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/mrgoonie/maskara/internal/version.Version={{.Version}}
+      - -X github.com/mrgoonie/maskara/internal/version.Commit={{.Commit}}
+      - -X github.com/mrgoonie/maskara/internal/version.Date={{.Date}}
+
+archives:
+  - id: default
+    ids:
+      - maskara
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- .Arch }}
+
+checksum:
+  name_template: checksums.txt
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-snapshot"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^test:"
+      - "^refactor:"
+
+release:
+  prerelease: auto
