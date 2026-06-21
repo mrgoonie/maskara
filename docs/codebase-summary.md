@@ -6,7 +6,7 @@
 |---|---|
 | `cmd/maskara` | CLI entrypoint |
 | `internal/cli` | command parsing and workflow routing |
-| `internal/agents` | agent name normalization and default path discovery |
+| `internal/agents` | agent catalog, name normalization, and default path discovery |
 | `internal/detect` | detector rules and masked finding creation |
 | `internal/scanner` | filesystem traversal and file scanning |
 | `internal/redact` | backup and redaction writes |

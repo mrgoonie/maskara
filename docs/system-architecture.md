@@ -31,7 +31,9 @@ marshal valid JSON back to disk.
 ## Guardrails
 
 Guardrails write agent-local instruction files, a privacy skill, and hook
-scripts. Existing files are backed up before appending or replacing.
+scripts when native paths are known. For newer agents without a known native
+instruction file, Maskara writes generic local guardrail files under likely
+config roots. Existing files are backed up before appending or replacing.
 
 ## Unresolved Questions
 
