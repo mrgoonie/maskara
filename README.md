@@ -35,6 +35,9 @@ maskara scan
 maskara scan --agent codex
 maskara scan -a codex
 
+# scan Gemini CLI logs from a custom directory
+maskara scan --agent gemini --root /path/to/logs
+
 # scan and report
 maskara report
 
@@ -63,10 +66,26 @@ Current target support:
 |---|---|
 | Claude Code | `~/.claude/projects` |
 | Codex | `~/.codex/sessions` |
-| OpenCode | platform config/data dirs |
-| Antigravity | platform config/data dirs |
+| Cursor | `~/.cursor` plus platform Cursor config/data dirs |
+| OpenCode | `~/.opencode` plus platform config/data dirs |
+| Antigravity / Antigravity CLI | `~/.antigravity` plus platform config/data dirs |
+| Kimi Code CLI | `~/.kimi` plus platform config/data dirs |
+| Droid | `~/.droid` plus platform config/data dirs |
+| Gemini CLI | `~/.gemini` plus platform config/data dirs |
+| GitHub Copilot | `~/.github-copilot` plus platform config/data dirs |
+| Hermes Agent | `~/.hermes` plus platform config/data dirs |
+| OpenClaw | `~/.openclaw` plus platform config/data dirs |
+| Kilo Code | `~/.kilo-code` plus platform config/data dirs |
+| Kiro CLI | `~/.kiro` plus platform config/data dirs |
+| Pi CLI | `~/.pi` plus platform config/data dirs |
+| Qoder | `~/.qoder` plus platform config/data dirs |
+| Qwen Code | `~/.qwen` plus platform config/data dirs |
+| Trae | `~/.trae` plus platform config/data dirs |
 
 Use `--root <path>` to scan a custom log directory.
+Use `--agent all` to include every built-in target. Agent aliases such as
+`gemini-cli`, `qwen-code`, `kimi-code`, and `github copilot` normalize to their
+canonical names.
 
 ## Detection
 
@@ -85,7 +104,9 @@ full secret values.
 
 `maskara guardrails` installs local agent instructions, a small privacy skill,
 and hook scripts that discourage commands likely to print secrets. Existing
-files are backed up before modification.
+files are backed up before modification. For agents without a known native
+instruction file, Maskara writes a generic `maskara-guardrails.md` reference and
+hook under the likely local config root.
 
 Guardrails reduce future leaks. They do not replace secret rotation, provider
 revocation, or review of already-shared transcripts.

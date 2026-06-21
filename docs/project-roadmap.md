@@ -5,7 +5,11 @@
 - Text/session log scanning
 - Markdown and JSON reports
 - Backup-based redaction
-- Claude/Codex/OpenCode/Antigravity guardrail installer
+- Expanded agent catalog for Claude, Codex, Cursor, OpenCode, Antigravity,
+  Gemini CLI, Qwen Code, Kimi Code CLI, Droid, GitHub Copilot, Hermes Agent,
+  OpenClaw, Kilo Code, Kiro CLI, Pi CLI, Qoder, and Trae
+- Guardrail installer with native paths for known agents and generic local
+  guardrail files for the rest
 - Cross-platform CI and release artifacts
 
 ## Next

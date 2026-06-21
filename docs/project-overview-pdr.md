@@ -14,7 +14,8 @@ reduce future leaks.
 
 ## Users
 
-- Developers using Claude Code, Codex, OpenCode, Antigravity, or similar agents
+- Developers using Claude Code, Codex, Cursor, OpenCode, Antigravity, Gemini
+  CLI, Qwen Code, and similar local coding agents
 - Open-source maintainers cleaning local agent transcripts before sharing repros
 - Security-conscious teams adding local privacy hygiene to coding workflows
 
@@ -24,7 +25,8 @@ reduce future leaks.
 - Offline scanning
 - Markdown and JSON reports
 - Safe local redaction with backups
-- Guardrails installer for common coding agents
+- Guardrails installer for common coding agents, with generic local guardrail
+  files where native instruction paths are not known
 - CI and release workflows for stable and beta branches
 
 ## Out Of Scope
