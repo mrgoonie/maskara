@@ -67,6 +67,7 @@ func Find(content, file, agent string, rules []Rule) []Finding {
 		matches := rule.re.FindAllStringSubmatchIndex(content, -1)
 		for _, match := range matches {
 			start, end := valueRange(match, rule.ValueGroup)
+			start, end = trimEscapedQuoteDelimiter(content, start, end)
 			if start < 0 || end <= start {
 				continue
 			}
@@ -117,6 +118,13 @@ func valueRange(match []int, group int) (int, int) {
 		}
 	}
 	return match[0], match[1]
+}
+
+func trimEscapedQuoteDelimiter(content string, start, end int) (int, int) {
+	if start >= 0 && end > start && end < len(content) && content[end-1] == '\\' && content[end] == '"' {
+		return start, end - 1
+	}
+	return start, end
 }
 
 func lineColumn(content string, offset int) (int, int) {
